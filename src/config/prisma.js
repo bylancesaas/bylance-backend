@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
-// TEMP: hardcoded for testing - using direct connection (not pooler)
-process.env.DATABASE_URL = 'postgresql://postgres:14272810bylance@db.mlktbfbtiihodwuppahd.supabase.co:5432/postgres';
+// TEMP: hardcoded for testing - pooler with correct region (us-west-2)
+process.env.DATABASE_URL = 'postgresql://postgres.mlktbfbtiihodwuppahd:14272810bylance@aws-0-us-west-2.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1';
 
 console.log('[DB DEBUG] DATABASE_URL:', process.env.DATABASE_URL);
 
