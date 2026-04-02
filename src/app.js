@@ -10,8 +10,11 @@ const app = express();
 
 // Security
 app.use(helmet());
+const allowedOrigins = config.frontendUrl === '*'
+  ? true
+  : config.frontendUrl.split(',').map(o => o.trim());
 app.use(cors({
-  origin: config.frontendUrl,
+  origin: allowedOrigins,
   credentials: true,
 }));
 
