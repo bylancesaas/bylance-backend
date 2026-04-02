@@ -1,3 +1,4 @@
+import './config/prisma.js'; // trigger DB URL build & debug log before anything else
 import app from './app.js';
 import { config } from './config/index.js';
 
