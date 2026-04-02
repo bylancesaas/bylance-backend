@@ -4,7 +4,8 @@ import { PrismaClient } from '@prisma/client';
 // so special characters in the password (@, !) don't break URL parsing
 if (process.env.DB_PASSWORD) {
   const user = encodeURIComponent(process.env.DB_USER || 'postgres');
-  const pass = encodeURIComponent(process.env.DB_PASSWORD);
+  // encodeURIComponent leaves ! unencoded; Supabase pgbouncer requires %21
+  const pass = encodeURIComponent(process.env.DB_PASSWORD).replace(/!/g, '%21');
   const host = process.env.DB_HOST;
   const name = process.env.DB_NAME || 'postgres';
   process.env.DATABASE_URL =
