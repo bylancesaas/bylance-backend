@@ -1,5 +1,8 @@
+import path from 'path';
+import crypto from 'crypto';
 import { TenantService } from './tenant.service.js';
 import { ApiResponse } from '../../utils/apiResponse.js';
+import { supabase } from '../../config/supabase.js';
 
 export class TenantController {
   static async list(req, res, next) {
@@ -62,7 +65,19 @@ export class TenantController {
   static async uploadLogo(req, res, next) {
     try {
       if (!req.file) return ApiResponse.error(res, 'Nenhum arquivo enviado', 422);
-      const logoUrl = `/uploads/logos/${req.file.filename}`;
+
+      const ext = path.extname(req.file.originalname).toLowerCase();
+      const filename = `${crypto.randomBytes(8).toString('hex')}${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('logos')
+        .upload(filename, req.file.buffer, { contentType: req.file.mimetype, upsert: true });
+
+      if (uploadError) throw new Error(uploadError.message);
+
+      const { data } = supabase.storage.from('logos').getPublicUrl(filename);
+      const logoUrl = data.publicUrl;
+
       const tenant = await TenantService.update(req.params.id, { logo: logoUrl });
       return ApiResponse.success(res, { logo: logoUrl, tenant }, 'Logo atualizado com sucesso');
     } catch (error) {
