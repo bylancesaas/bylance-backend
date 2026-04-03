@@ -31,51 +31,95 @@ export class ServiceOrderRepository {
   static async create(data) {
     const { items, services, ...orderData } = data;
 
-    return prisma.serviceOrder.create({
-      data: {
-        ...orderData,
-        items: items?.length ? { create: items } : undefined,
-        services: services?.length ? { create: services } : undefined,
-      },
-      include: {
-        client: true, vehicle: true,
-        items: { include: { item: true } },
-        services: { include: { service: true } },
-      },
+    return prisma.$transaction(async (tx) => {
+      const order = await tx.serviceOrder.create({
+        data: {
+          ...orderData,
+          items: items?.length ? { create: items } : undefined,
+          services: services?.length ? { create: services } : undefined,
+        },
+        include: {
+          client: true, vehicle: true,
+          items: { include: { item: true } },
+          services: { include: { service: true } },
+        },
+      });
+
+      // Decrement stock for each item used
+      if (items?.length) {
+        for (const i of items) {
+          await tx.item.update({
+            where: { id: i.itemId },
+            data: { stockQuantity: { decrement: i.quantity } },
+          });
+        }
+      }
+
+      return order;
     });
   }
 
   static async update(id, tenantId, data) {
     const { items, services, ...orderData } = data;
 
-    // Update the order
-    await prisma.serviceOrder.updateMany({ where: { id, tenantId }, data: orderData });
+    return prisma.$transaction(async (tx) => {
+      // Update the order fields
+      await tx.serviceOrder.updateMany({ where: { id, tenantId }, data: orderData });
 
-    // Replace items if provided
-    if (items) {
-      await prisma.serviceOrderItem.deleteMany({ where: { serviceOrderId: id } });
-      if (items.length) {
-        await prisma.serviceOrderItem.createMany({
-          data: items.map(i => ({ ...i, serviceOrderId: id })),
-        });
+      // Replace items: restore old stock first, then debit new
+      if (items) {
+        const oldItems = await tx.serviceOrderItem.findMany({ where: { serviceOrderId: id } });
+
+        for (const old of oldItems) {
+          await tx.item.update({
+            where: { id: old.itemId },
+            data: { stockQuantity: { increment: old.quantity } },
+          });
+        }
+
+        await tx.serviceOrderItem.deleteMany({ where: { serviceOrderId: id } });
+
+        if (items.length) {
+          await tx.serviceOrderItem.createMany({
+            data: items.map(i => ({ ...i, serviceOrderId: id })),
+          });
+
+          for (const i of items) {
+            await tx.item.update({
+              where: { id: i.itemId },
+              data: { stockQuantity: { decrement: i.quantity } },
+            });
+          }
+        }
       }
-    }
 
-    // Replace services if provided
-    if (services) {
-      await prisma.serviceOrderService.deleteMany({ where: { serviceOrderId: id } });
-      if (services.length) {
-        await prisma.serviceOrderService.createMany({
-          data: services.map(s => ({ ...s, serviceOrderId: id })),
-        });
+      // Replace services if provided
+      if (services) {
+        await tx.serviceOrderService.deleteMany({ where: { serviceOrderId: id } });
+        if (services.length) {
+          await tx.serviceOrderService.createMany({
+            data: services.map(s => ({ ...s, serviceOrderId: id })),
+          });
+        }
       }
-    }
 
-    return this.findById(id, tenantId);
+      return this.findById(id, tenantId);
+    });
   }
 
   static async delete(id, tenantId) {
-    return prisma.serviceOrder.deleteMany({ where: { id, tenantId } });
+    return prisma.$transaction(async (tx) => {
+      // Restore stock before deleting the order
+      const oldItems = await tx.serviceOrderItem.findMany({ where: { serviceOrderId: id } });
+      for (const old of oldItems) {
+        await tx.item.update({
+          where: { id: old.itemId },
+          data: { stockQuantity: { increment: old.quantity } },
+        });
+      }
+
+      return tx.serviceOrder.deleteMany({ where: { id, tenantId } });
+    });
   }
 
   static async sendToFinancial(order, tenantId) {
