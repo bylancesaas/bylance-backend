@@ -22,6 +22,55 @@ model Tenant {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
+  // Dados institucionais
+  razaoSocial        String?  @map("razao_social")
+  cnpj               String?
+  inscricaoEstadual  String?  @map("inscricao_estadual")
+  inscricaoMunicipal String?  @map("inscricao_municipal")
+  porte              String?
+  site               String?
+  telefone           String?
+
+  // Endereço
+  cep         String?
+  logradouro  String?
+  numero      String?
+  complemento String?
+  bairro      String?
+  cidade      String?
+  estado      String?
+
+  // Responsável principal
+  responsavelNome     String? @map("responsavel_nome")
+  responsavelEmail    String? @map("responsavel_email")
+  responsavelTelefone String? @map("responsavel_telefone")
+  responsavelCargo    String? @map("responsavel_cargo")
+
+  // Comercial / Contrato
+  planStatus      String    @default("ativo") @map("plan_status")
+  planValue       Float?    @map("plan_value")
+  planBillingType String?   @map("plan_billing_type")
+  planStartDate   DateTime? @map("plan_start_date")
+  planEndDate     DateTime? @map("plan_end_date")
+  planNotes       String?   @map("plan_notes")
+  maxUsers        Int       @default(10) @map("max_users")
+
+  // Onboarding
+  onboardingStatus  String  @default("pendente") @map("onboarding_status")
+
+  // Soft delete
+  deletedAt DateTime? @map("deleted_at")
+
+  // Contrato
+  contractStatus      String    @default("nao_gerado") @map("contract_status")
+  contractGeneratedAt DateTime? @map("contract_generated_at")
+  contractSentAt      DateTime? @map("contract_sent_at")
+  contractSentTo      String?   @map("contract_sent_to")
+  contractSignedAt    DateTime? @map("contract_signed_at")
+  contractSignedBy    String?   @map("contract_signed_by")
+  contractFileUrl     String?   @map("contract_file_url")
+  contractNotes       String?   @map("contract_notes")
+
   users         User[]
   clients       Client[]
   vehicles      Vehicle[]
@@ -30,9 +79,25 @@ model Tenant {
   serviceOrders ServiceOrder[]
   warranties    Warranty[]
   financials    Financial[]
-  modules       TenantModule[]
+  modules    TenantModule[]
+  auditLogs  TenantAuditLog[]
 
   @@map("tenants")
+}
+
+model TenantAuditLog {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  action       String
+  category     String   @default("geral")
+  description  String
+  performedBy  String   @map("performed_by")
+  performedAt  DateTime @default(now()) @map("performed_at")
+  meta         String?  // JSON string for extra context
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_audit_logs")
 }
 
 model TenantModule {
