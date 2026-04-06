@@ -16,6 +16,7 @@ model Tenant {
   iconBgColor    String   @default("#ffffff") @map("icon_bg_color")
   primaryColor   String   @default("#1e40af") @map("primary_color")
   secondaryColor String   @default("#3b82f6") @map("secondary_color")
+  vertical       String   @default("mecanica")
   businessType   String   @default("geral") @map("business_type")
   active         Boolean  @default(true)
   plan           String   @default("basic")
@@ -81,6 +82,13 @@ model Tenant {
   financials    Financial[]
   modules    TenantModule[]
   auditLogs  TenantAuditLog[]
+
+  // Hotel
+  guests       Guest[]
+  roomTypes    RoomType[]
+  rooms        Room[]
+  reservations Reservation[]
+  housekeepingTasks HousekeepingTask[]
 
   @@map("tenants")
 }
@@ -290,4 +298,107 @@ model Financial {
   serviceOrder ServiceOrder? @relation(fields: [serviceOrderId], references: [id], onDelete: SetNull)
 
   @@map("financials")
+}
+
+// ── Hotel vertical ────────────────────────────────────────────────────────────
+
+model Guest {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  name         String
+  email        String?
+  phone        String?
+  document     String?
+  documentType String?  @default("cpf") @map("document_type")
+  nationality  String?  @default("BR")
+  address      String?
+  notes        String?
+  vip          Boolean  @default(false)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+
+  @@map("guests")
+}
+
+model RoomType {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String
+  description String?
+  capacity    Int      @default(2)
+  basePrice   Float    @map("base_price")
+  amenities   String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  rooms  Room[]
+
+  @@map("room_types")
+}
+
+model Room {
+  id         String   @id @default(uuid())
+  tenantId   String   @map("tenant_id")
+  roomTypeId String   @map("room_type_id")
+  number     String
+  floor      Int      @default(1)
+  status     String   @default("available")
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  tenant       Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  roomType     RoomType           @relation(fields: [roomTypeId], references: [id])
+  reservations Reservation[]
+  housekeeping HousekeepingTask[]
+
+  @@unique([tenantId, number])
+  @@map("rooms")
+}
+
+model Reservation {
+  id         String   @id @default(uuid())
+  tenantId   String   @map("tenant_id")
+  guestId    String   @map("guest_id")
+  roomId     String   @map("room_id")
+  checkIn    DateTime @map("check_in")
+  checkOut   DateTime @map("check_out")
+  status     String   @default("confirmed")
+  adults     Int      @default(1)
+  children   Int      @default(0)
+  totalPrice Float    @default(0) @map("total_price")
+  notes      String?
+  source     String?  @default("direct")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  guest  Guest  @relation(fields: [guestId], references: [id])
+  room   Room   @relation(fields: [roomId], references: [id])
+
+  @@map("reservations")
+}
+
+model HousekeepingTask {
+  id          String    @id @default(uuid())
+  tenantId    String    @map("tenant_id")
+  roomId      String    @map("room_id")
+  assignedTo  String?   @map("assigned_to")
+  status      String    @default("pending")
+  priority    String    @default("normal")
+  type        String    @default("checkout")
+  notes       String?
+  scheduledAt DateTime? @map("scheduled_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  room   Room   @relation(fields: [roomId], references: [id])
+
+  @@map("housekeeping_tasks")
 }

@@ -48,6 +48,7 @@ export class AuthService {
           primaryColor: user.tenant.primaryColor,
           secondaryColor: user.tenant.secondaryColor,
           businessType: user.tenant.businessType,
+          vertical: user.tenant.vertical,
           modules: user.tenant.modules.map(m => m.module),
         } : null,
       },
@@ -82,7 +83,7 @@ export class AuthService {
         tenant: {
           select: {
             id: true, name: true, slug: true, logo: true, iconBgColor: true,
-            primaryColor: true, secondaryColor: true, businessType: true,
+            primaryColor: true, secondaryColor: true, businessType: true, vertical: true,
             modules: { where: { active: true }, select: { module: true } },
           },
         },

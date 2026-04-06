@@ -36,10 +36,10 @@ export class TenantRepository {
       data: {
         ...data,
         modules: {
-          create: [
-            'dashboard', 'clients', 'items', 'services',
-            'serviceOrders', 'warranties', 'financial', 'userManagement',
-          ].map(mod => ({ module: mod, active: true })),
+          create: (data.vertical === 'hotel'
+            ? ['dashboard', 'guests', 'roomTypes', 'rooms', 'reservations', 'housekeeping', 'financial', 'userManagement']
+            : ['dashboard', 'clients', 'items', 'services', 'serviceOrders', 'warranties', 'financial', 'userManagement']
+          ).map(mod => ({ module: mod, active: true })),
         },
       },
       include: { modules: true },
