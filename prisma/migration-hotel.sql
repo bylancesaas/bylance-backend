@@ -1,13 +1,14 @@
 -- Migration: Hotel Vertical + Multi-Vertical Support
 -- Run against Supabase PostgreSQL
+-- Note: Prisma uses String IDs stored as TEXT (not UUID) in PostgreSQL
 
 -- 1. Add vertical column to tenants
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS vertical TEXT NOT NULL DEFAULT 'mecanica';
 
 -- 2. Guests table
 CREATE TABLE IF NOT EXISTS guests (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   email TEXT,
   phone TEXT,
@@ -25,8 +26,8 @@ CREATE INDEX IF NOT EXISTS idx_guests_tenant ON guests(tenant_id);
 
 -- 3. Room Types table
 CREATE TABLE IF NOT EXISTS room_types (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   description TEXT,
   capacity INTEGER NOT NULL DEFAULT 2,
@@ -40,9 +41,9 @@ CREATE INDEX IF NOT EXISTS idx_room_types_tenant ON room_types(tenant_id);
 
 -- 4. Rooms table
 CREATE TABLE IF NOT EXISTS rooms (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  room_type_id UUID NOT NULL REFERENCES room_types(id),
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  room_type_id TEXT NOT NULL REFERENCES room_types(id),
   number TEXT NOT NULL,
   floor INTEGER NOT NULL DEFAULT 1,
   status TEXT NOT NULL DEFAULT 'available',
@@ -57,10 +58,10 @@ CREATE INDEX IF NOT EXISTS idx_rooms_status ON rooms(tenant_id, status);
 
 -- 5. Reservations table
 CREATE TABLE IF NOT EXISTS reservations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  guest_id UUID NOT NULL REFERENCES guests(id),
-  room_id UUID NOT NULL REFERENCES rooms(id),
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  guest_id TEXT NOT NULL REFERENCES guests(id),
+  room_id TEXT NOT NULL REFERENCES rooms(id),
   check_in TIMESTAMPTZ NOT NULL,
   check_out TIMESTAMPTZ NOT NULL,
   status TEXT NOT NULL DEFAULT 'confirmed',
@@ -80,9 +81,9 @@ CREATE INDEX IF NOT EXISTS idx_reservations_dates ON reservations(room_id, check
 
 -- 6. Housekeeping Tasks table
 CREATE TABLE IF NOT EXISTS housekeeping_tasks (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  room_id UUID NOT NULL REFERENCES rooms(id),
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  room_id TEXT NOT NULL REFERENCES rooms(id),
   assigned_to TEXT,
   status TEXT NOT NULL DEFAULT 'pending',
   priority TEXT NOT NULL DEFAULT 'normal',
