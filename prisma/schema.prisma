@@ -183,6 +183,7 @@ model Item {
   sellPrice     Float    @default(0) @map("sell_price")
   stockQuantity Int      @default(0) @map("stock_quantity")
   category      String?
+  unit          String?
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
