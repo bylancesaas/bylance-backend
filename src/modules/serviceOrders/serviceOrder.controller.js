@@ -15,6 +15,20 @@ export class ServiceOrderController {
   static async update(req, res, next) {
     try { return ApiResponse.success(res, await ServiceOrderService.update(req.params.id, req.tenantId, req.body)); } catch (e) { next(e); }
   }
+
+  static async updateStatus(req, res, next) {
+    try {
+      return ApiResponse.success(
+        res,
+        await ServiceOrderService.updateStatus(req.params.id, req.tenantId, req.body?.status)
+      );
+    } catch (e) {
+      if (e.message === 'NOT_FOUND') return ApiResponse.notFound(res);
+      if (e.message === 'INVALID_STATUS') return ApiResponse.error(res, 'Status inválido', 400);
+      next(e);
+    }
+  }
+
   static async delete(req, res, next) {
     try { await ServiceOrderService.delete(req.params.id, req.tenantId); return ApiResponse.success(res, null, 'Removido'); } catch (e) { next(e); }
   }

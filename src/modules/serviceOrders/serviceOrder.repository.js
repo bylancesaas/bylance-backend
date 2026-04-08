@@ -107,6 +107,21 @@ export class ServiceOrderRepository {
     });
   }
 
+  static async updateStatus(id, tenantId, status) {
+    const current = await prisma.serviceOrder.findFirst({
+      where: { id, tenantId },
+      select: { id: true, completedAt: true },
+    });
+    if (!current) return null;
+
+    const data = { status };
+    if (status === 'completed' && !current.completedAt) data.completedAt = new Date();
+    if (status !== 'completed' && current.completedAt) data.completedAt = null;
+
+    await prisma.serviceOrder.updateMany({ where: { id, tenantId }, data });
+    return this.findById(id, tenantId);
+  }
+
   static async delete(id, tenantId) {
     return prisma.$transaction(async (tx) => {
       // Restore stock before deleting the order
