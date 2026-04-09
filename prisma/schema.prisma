@@ -76,6 +76,7 @@ model Tenant {
   clients       Client[]
   vehicles      Vehicle[]
   items         Item[]
+  stockMovements StockMovement[]
   services      Service[]
   serviceOrders ServiceOrder[]
   warranties    Warranty[]
@@ -189,8 +190,32 @@ model Item {
 
   tenant     Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   orderItems ServiceOrderItem[]
+  stockMovements StockMovement[]
 
   @@map("items")
+}
+
+model StockMovement {
+  id               String   @id @default(uuid())
+  tenantId         String   @map("tenant_id")
+  itemId           String   @map("item_id")
+  type             String
+  entryType        String?  @map("entry_type")
+  quantity         Int
+  unitCost         Float?   @map("unit_cost")
+  supplier         String?
+  document         String?
+  notes            String?
+  movementDate     DateTime @default(now()) @map("movement_date")
+  previousQuantity Int      @map("previous_quantity")
+  resultingQuantity Int     @map("resulting_quantity")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, itemId, movementDate])
+  @@map("stock_movements")
 }
 
 model Service {
